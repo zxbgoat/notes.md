@@ -22,7 +22,7 @@ from yad2k.models.keras_yolo import yolo_head, yolo_boxes_to_corners, preprocess
 
 用YOLO模型构建一个车辆检测系统。现已收集很多照相机拍摄的路面场景，并将车框起标记了出来，如下图：
 
-<img src="box_label.png" />
+<img src="figures/box_label.png" />
 
 若需要识别80类物体，可以用数字1到80，或80维one-hot向量表示类别标记$c$。
 
@@ -36,15 +36,15 @@ $$
 $$
 更详细的细节见下图：
 
-<img src="architecture.png" />
+<img src="figures/architecture.png" />
 
 若物体的中点落入某个网格单元，则此单元负责监测物体。因为使用了5个锚边框，因此$19\times19$每个单元编码5个边框的信息。锚边框仅由其宽度和高度定义，为简洁性，这里会将$(19,19,5,85)$的最后两维铺平，因此CNN的输出形状为$(19,19,425)$。
 
-<img src="flatten.png" />
+<img src="figures/flatten.png" />
 
 现在，对每个单元的每个边框盒子会计算下面的元素并提取为边框含有某一物体的概率：
 
-<img src="probability_extraction.png" />
+<img src="figures/probability_extraction.png" />
 
 下面是一种可视化YOLO在一幅图像做预测的方法：
 
@@ -53,11 +53,11 @@ $$
 
 这就得到下面这样的图片：
 
-<img src="proba_map.png" />
+<img src="figures/proba_map.png" />
 
 另一种可视化YOLO输出的方法是描绘出其输出的边界框，这样会得到下面的图片：
 
-<img src="anchor_map.png" />
+<img src="figures/anchor_map.png" />
 
 上面的图片仅描绘出了模型赋予高概率的边框，单依然太多了。需要过滤算法的输出到小的多的检测到的物体，为此需要使用非最大抑制。为此，执行下面的步骤：
 
@@ -106,11 +106,11 @@ def yolo_filter_boxes(box_confidence, boxes, box_class_probs, threshold = .6):
 
 **2.3非最大抑制**：即便在用阈值过滤后，依然会有很多重合的框盒。第二种选择正确框盒的过滤方法是非最大抑制(NMS)，其效果如下图所示：
 
-<img src="non-max-suppression.png" />
+<img src="figures/non-max-suppression.png" />
 
 非最大抑制一个很重要的函数是“交上并”，或IoU：
 
-<img src="iou.png" />
+<img src="figures/iou.png" />
 
 这里，使用两角坐标定义框盒（左上和右下）：$(x_1,y_1,x_2,y_2)$；这样，框盒的面积就是$(y_2-y_1)\times(x_2-x_2)$；另外还需要找到两个框盒交的坐标$(x_{i1},y_{i1},x_{i2},y_{i2})$，其中：
 

@@ -2,7 +2,7 @@
 
 下面是基本$T_x=T_y$的RNN展开图：
 
-<img src="RNN.png"/>
+<img src="figures/RNN.png"/>
 
 代码实现的基本步骤就是：
 
@@ -11,7 +11,7 @@
 
 **RNN单元**：下面是RNN单元的结构图和单步的运算：
 
-<img src="rnn_step_forward.png" />
+<img src="figures/rnn_step_forward.png" />
 
 实现指南：
 
@@ -39,7 +39,7 @@ def rnn_cell_forward(xt, a_prev, parameters):
 
 **前向传递**：RNN是基本单元的循环，每个时间步将前个时间的隐状态$a^{\langle t-1 \rangle}$和当前时刻数据$x^{\langle t \rangle}$作为输入，输出此刻的隐状态$a^{\langle t \rangle}$和预测$y^{\langle t \rangle}$：
 
-<img src="rnn.png" />
+<img src="figures/rnn.png" />
 
 实现指南：
 
@@ -85,7 +85,7 @@ def rnn_forward(x, a0, parameters):
 
 下图展示了LSTM单元的操作：
 
-<img src="LSTM.png" />
+<img src="figures/LSTM.png" />
 
 关于门，也许之前对RNN中的隐状态理解不到位，其实它是一个很大的向量，向量的不同元素控制不同文本的不同状态，因此能存储很多个影响语言的因素，比如单复数、人称状态等，当有对应的事物影响某个因素改变时，隐状态向量相应位置的值也发生变化：
 
@@ -136,7 +136,7 @@ def lstm_cell_forward(xt, a_prev, c_prev, parameters):
 
 **LSTM前向传递**：实现单步的LSTM单元之后，就可以在输入序列上迭代$T_x$次：
 
-<img src="LSTM_rnn.png" />
+<img src="figures/LSTM_rnn.png" />
 
 这里总结一下各个参数唯独之间的关系：
 
@@ -204,6 +204,6 @@ def lstm_forward(x, a0, parameters):
 
 **基本RNN的反向传递**：其公式如下图，链式规则同样适用于计算$\left( \frac{\partial J}{\partial W_{ax}},\frac{\partial J}{\partial W_{aa}},\frac{\partial J}{\partial b} \right)$来更新$\left(W_{ax},W_{aa},b_a\right)$：
 
-<img src="rnn_cell_backprop.png" />
+<img src="figures/rnn_cell_backprop.png" />
 
 先推导单步反向函数。注意$\tanh(x)$的导数为$1-\tanh^2(x)$。

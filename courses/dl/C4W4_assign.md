@@ -19,7 +19,7 @@ import tensorflow as tf
 
 神经风格迁移(NST) 会将两幅图像融合，一幅“内容”图像C和一幅“风格图像”S，创造一幅“生成”图像G，生成图像结合了C的内容和S的风格：
 
-<img src="louvre_generated.png" />
+<img src="figures/louvre_generated.png" />
 
 
 
@@ -66,7 +66,7 @@ J_{content}(C,G) =  \frac{1}{4 \times n_H \times n_W \times n_C}\sum _{ \text{al
 $$
 这里$n_H,n_W,n_C$分别是选定层的高、宽和通道数：
 
-<img src="NST_LOSS.png" />
+<img src="figures/NST_LOSS.png" />
 
 实现下面3步完成内容代价的计算：
 
@@ -107,7 +107,7 @@ imshow(style_image)
 
 风格矩阵又被称为“格拉姆”矩阵，一系列向量$(v_1,\dots,v_n)$的格拉姆矩阵$G$是点乘矩阵，其条目为$G_{ij}=v_i^Tv_j$，即$G_{ij}$比较$v_i$和$v_j$的相似性，若相似性很高，则其点乘值$G_{ij}$就很高。早NST中，可以将展开的滤波器矩阵与其转置相乘获得风格矩阵：
 
-<img src="NST_GM.png" />
+<img src="figures/NST_GM.png" />
 
 结果矩阵的维度是$(n_C,n_C)$，其中$n_C$是滤波器个数，$G_{ij}$衡量滤波器$i$和滤波器$j$激活值的相似性。很重要的一点是其对角元素$G_{ii}$也衡量了滤波器$i$的活跃度。比如$i$检测图像中的垂直纹理，则$G_{ii}$检测垂直纹理的普遍性。若$G_{ii}$很大则表示有很多垂直纹理。通过获得不同特征的普遍度($G_{ii}$)和不同特征共现的多少($G_{ij}$)，风格矩阵衡量衣服图像的风格。
 
@@ -140,3 +140,4 @@ $$
 ```python
 #
 ```
+
