@@ -1,0 +1,124 @@
+\documentclass[11pt,twoside,a4paper]{ctexart}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{hyperref}
+\DeclareMathOperator*{\minimize}{minimize}
+\floatname{algorithm}{算法}
+
+\begin{document}
+	\section{问题设定}
+	假定模型$f$将观测$\mathbf x$映射为输出$\mathbf a$，元学习期间要训练模型使其能调整到许多任务。每个任务
+	$\mathcal T=\left\{\mathcal L(\mathbf x_1, \mathbf a_1, \ldots, \mathbf x_H, \mathbf a_H), q(\mathbf x_1), q(\mathbf x_{t+1}\mid\mathbf x_t, \mathbf a_t), H\right\}$
+	由损失函数$\mathcal L$、初始观测分布$q(\mathbf x_1)$、转移分布$q\left(\mathbf x_{t+1}\mid\mathbf x_t,a_t\right)$和序列长度$H$组成，模型可以在每个时间$t$选择一个输出$\mathbf a_t$产生长度为$H$的样本。
+	在元学习场景中，假设有一个关于任务的分布$p(\mathcal T)$，$K$样本学习就是仅使用$K$个从来自$q_i$的样本来训练模型学习来自$p(\mathcal T)$的新任务$\mathcal T_i$。在元训练期间：
+	\begin{enumerate}
+		\item 首先从$p(\mathcal T)$抽取一个任务$\mathcal T_i$；
+		\item 然后用$K$个来自任务$\mathcal T_i$的样本训练模型；
+		\item 之后在$\mathcal T_i$的新样本上测试模型；
+		\item 其后使用测试误差改善模型$f$，被抽取任务$\mathcal T_i$的测试误差实际充当元学习过程的训练误差；
+		\item 最后，从$p(\mathcal T)$抽取新任务，模型的性能就是在学习$K$个新任务的样本后，在新任务上测试样本上的表现。
+	\end{enumerate}
+	
+	\clearpage
+	\section{MAML}
+	MAML将任意标准模型为快速调整做准备。考虑一个参数为$\theta$的模型$f_{\theta}$，当调整到新任务$\mathcal T_i$时，参数变为$\theta'_i$：
+	\begin{equation}
+		\theta'_i = \theta - \alpha\nabla_\theta\mathcal L_{\mathcal T_i}\left(f_\theta\right)
+	\end{equation}
+	模型参数通过从$p(\mathcal T)$抽取的任务，为优化$f_{\theta_i'}$（而非普通机器学习的$f_\theta$）训练调整参数$\theta$，其元目标就是：
+	\begin{equation}
+		\min_\theta\sum_{\mathcal T_i \sim p(\mathcal T)}\mathcal L_{\mathcal T_i}\left(f_{\theta_i'}\right)=\sum_{\mathcal T_i \sim p(\mathcal T)}\mathcal L_{\mathcal T_i}
+		\left(f_{\theta - \alpha\nabla_\theta\mathcal L_{\mathcal T_i}\left(f_\theta\right)}\right)
+	\end{equation}
+	再次强调一下：元优化是在模型参数$\theta$上执行，但是其目标函数是使用更新参数$\theta'$计算。通过任务的元优化可以使用SGD执行，因此模型的参数$\theta$更新为：
+	\begin{equation}
+		\theta \gets \theta - \beta\nabla_\theta \sum_{\mathcal T_i \sim p(\mathcal T)}\mathcal L_{\mathcal T_i}\left(f_{\theta_i'}\right)
+	\end{equation}
+	MAML元梯度更新包含一个通过梯度的梯度，计算时需要额外的通过$f$的反向传播来计算Hessian向量积。具体的算法参见\hyperref[alg1]{算法(\ref{alg1})}。
+	\begin{algorithm}
+		\caption{模型无关元学习}
+		\label{alg1}
+		\begin{algorithmic}[1]
+			\Require $p(\mathcal T)$：关于任务的分布
+			\Require $\alpha,\beta$：步长超参
+			\State 随机初始化参数$\theta$
+			\While {not done}
+			\State 抽取任务批次$\mathcal T_i \sim p(\mathcal T)$
+			\For {all $\mathcal T_i$}
+			\State 评估$K$个样本的$\nabla_\theta\mathcal L_{\mathcal T_i}\left( f_\theta \right)$
+			\State 用梯度下降计算调整参数$\theta'_i=\theta-\alpha\mathcal{L}_{\mathcal{T}_i}\left( f_\theta \right)$
+			\EndFor
+			\State 更新$\theta \gets \theta - \beta\nabla_\theta\sum_{\mathcal{T}_i\sim p(\mathcal{T})}\mathcal{L}_{\mathcal{T}_i}\left( f_{\theta_i'}\right)$
+			\EndWhile
+		\end{algorithmic}
+	\end{algorithm}
+	\\而用于监督学习的MAML可见\hyperref[alg2]{算法(\ref{alg2})}。
+	\begin{algorithm}
+		\caption{用于监督学习的MAML}
+		\label{alg2}
+		\begin{algorithmic}[1]
+			\Require $p(\mathcal T)$：关于任务的分布
+			\Require $\alpha,\beta$：步长超参
+			\State 随机初始化参数$\theta$
+			\While {not done}
+			\State 抽取任务批次$\mathcal T_i \sim p(\mathcal T)$
+			\For {all $\mathcal T_i$}
+			\State 从$\mathcal{T}_i$抽取$K$个数据点$\mathcal D=\left\{\mathbf{x}^{(i)},\mathbf{y}^{(i)}\right\}$
+			\State 使用$\mathcal D$和损失函数$\mathcal{L}_{\mathcal{T}_i}$评估$\nabla_\theta\mathcal L_{\mathcal T_i}\left( f_\theta \right)$
+			\State 用梯度下降计算调整参数$\theta'_i=\theta-\alpha\mathcal{L}_{\mathcal{T}_i}\left( f_\theta \right)$
+			\State 从$\mathcal{T}_i$抽取数据点$\mathcal D_i'=\left\{\mathbf{x}^{(i)},\mathbf{y}^{(i)}\right\}$用于元更新。
+			\EndFor
+			\State 使用每个$\mathcal D_i'$和$\mathcal{L}_{\mathcal{T}_i}$更新$\theta \gets \theta - \beta\nabla_\theta\sum_{\mathcal{T}_i\sim p(\mathcal{T})}\mathcal{L}_{\mathcal{T}_i}\left( f_{\theta_i'}\right)$
+			\EndWhile
+		\end{algorithmic}
+	\end{algorithm}
+	
+	\clearpage
+	\section{FOMAML}
+	对给定的任务$\mathcal T_i$，MAML算法在计算更新参数（内部循环）时使用训练样本$A_i$，而计算损失时则使用测试样本$B_i$，这样为泛化的优化十分类似交叉验证，则MAML的目标函数就可以写成：
+	\begin{equation}
+		\min_\theta\sum_{\mathcal T_i \sim p(\mathcal T)}\mathcal L_{\mathcal T_i,B_i}\left(f_{\theta_i',A_i}\right)
+	\end{equation}
+	使用SGD优化就是：
+	\begin{align}
+	g_{\text{MAML}} &= \frac{\partial}{\partial\theta}\mathcal L_{\mathcal T_i,B_i}\left(f_{\theta_i',A_i}\right)\\
+	&= f'_{\theta_i',A_i}\mathcal L'_{\mathcal T_i,B_i}\left(f_{\theta_i',A_i}\right)
+	\end{align}
+	令$U_{\tau,A}=f_{\theta_i',A_i}$表示用任务$\tau$中样本数据对参数$\theta$进行$K$次梯度更新的算子，故而$U'_{\tau,A}$就是操作$U_{\tau,A}$的Jacobian矩阵。
+	根据公式(1)，$U_{\tau,A}$就对应于给初始向量添加一序列的梯度向量，即$U_{\tau,A}(\theta)=\theta+g_1+g_2+\cdots+g_k$。一阶$MAML$（FOMAML）将这些梯度看成是常数，因此它在外部优化循环中使用的梯度
+	就是$g_{\text{FOMAML}}=\mathcal L'_{\tau,B}\left(U_{\tau,A}\right)$，这样就能用一种特别简单的方式实现：
+	\begin{enumerate}
+		\item 抽取任务$\tau$；
+		\item 应用更新操作，获得$\tilde{\theta}=U_{\tau,A}(\theta)$；
+		\item 计算$\tilde{\theta}$处的梯度$g_{\text{FOMAML}}=\mathcal L'_{\tau,B}\left(\tilde{\theta}\right)$；
+		\item 最后将$g_{\text{FOMAML}}$插入到外部循环优化。
+	\end{enumerate}
+	因此用于监督学习的FOMAML如\hyperref[alg3]{算法(\ref{alg3})}
+	\begin{algorithm}
+		\caption{用于监督学习的FOMAML}
+		\label{alg3}
+		\begin{algorithmic}[1]
+			\Require $p(\mathcal T)$：关于任务的分布
+			\Require $\alpha,\beta$：步长超参
+			\State 随机初始化参数$\theta$
+			\While {not done}
+			\State 抽取任务批次$\mathcal T_i \sim p(\mathcal T)$
+			\For {all $\mathcal T_i$}
+			\State 从$\mathcal{T}_i$抽取$K$个数据点$\mathcal D=\left\{\mathbf{x}^{(i)},\mathbf{y}^{(i)}\right\}$
+			\State 使用$\mathcal D$和损失函数$\mathcal{L}_{\mathcal{T}_i}$评估$\nabla_\theta\mathcal L_{\mathcal T_i}\left( f_\theta \right)$
+			\State 用梯度下降计算调整参数$\theta'_i=\theta-\alpha\mathcal{L}_{\mathcal{T}_i}\left( f_\theta \right)$
+			\State 从$\mathcal{T}_i$抽取数据点$\mathcal D_i'=\left\{\mathbf{x}^{(i)},\mathbf{y}^{(i)}\right\}$用于元更新。
+			\EndFor
+			\State 使用每个$\mathcal D_i'$和$\mathcal{L}_{\mathcal{T}_i}$更新$\theta \gets \theta - \beta\nabla_\theta\sum_{\mathcal{T}_i\sim p(\mathcal{T})}\mathcal{L}_{\mathcal{T}_i}\left( f_{\theta_i'}\right)$
+			\EndWhile
+		\end{algorithmic}
+	\end{algorithm}
+	
+	\clearpage
+	\section{Reptile}
+	
+\end{document}
