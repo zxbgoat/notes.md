@@ -326,3 +326,96 @@ v_\pi(s)
 &=& \mathbb E_\pi[R_{t+1}+\gamma v_\pi(S_{t+1}) \mid S_t=s]
 \end{eqnarray}
 $$
+
+
+
+alg1_iter_policy_eva.py
+
+```python
+#! -*- coding:utf-8 -*-
+
+from math import abs
+
+gamma = 0.1
+theta = 1e-7
+
+def iter_policy_eva(pi, p, S, A, R):
+    """
+        Usage: evaluate how good is a policy
+        Invoke: V = iter_policy_eva(pi, p)
+        Parameters: pi is the policy, determining pr(a | s)
+                    p is the dynamics of the enviroment,
+                        determining pr(nx_s,r | s, a)
+                    S: list of states
+                    A: list of actions
+                    R: list of rewards
+        Result: return the array of the value of all states
+    """
+
+    # initialize
+    V = [0 for s in S]
+    # iterate
+    while True:
+        delta = 0
+        for s in S:
+            v = V[s]
+            V[s] = 0
+            for a in actions:
+                pi_a_s = pi(a,s) # get the probability of pr(a|s)
+                for nx_s in S:
+                    for r in R:
+                        tmps = p(nx_s,r,s,a)*[r+gamma*V[nx_s]]
+                tmpa = pi_a_s * tmps
+            V[s] += tmpa
+            delta = max(delta, math.abs(V[s]-v))
+
+        # judge if stop iteration
+        if delta < theta:
+            break
+
+```
+
+alg2_policy_iter.py
+
+```python
+#！ -*- coding:utf-8 -*-
+
+import numpy as np
+from math import abs
+import random
+
+gamma = 0.1
+theta = 1e-7
+
+def policy_iter():
+    """
+    """
+
+    # initialize
+    V = [0 for s in S]
+    pi = []
+
+    # policy iterate
+    while True:
+        # policy evaluate
+        while True:
+            delta = 0
+            for s in S:
+                v = V[s]
+                V[s] = 0
+                for nx_s in S:
+                    for r in R:
+                        tmp = p(nx_s,r,s,a) * (r + gamma * V[nx_s])
+                        V[s] += tmp
+                delta = max(delat, abs(V[s]-v))
+            if delta < theta:
+                break
+
+        # policy improvement
+        while True:
+            stable = True
+            for s in S:
+                old_a = pi(s)
+
+```
+
