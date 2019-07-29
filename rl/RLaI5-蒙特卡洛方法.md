@@ -8,11 +8,11 @@ MC是基于平均样本回报的方法，为确保定义良好的回报，这里
 
 先讨论学习给定策略价值函数的MC方法。给定一些遵循策略$\pi$经过状态$s$的节来评估$v_\pi(s)$，在节中$s$的每次出现称为到$s$的一次访问，第一次出现为到$s$的首次访问。首访(FV)MC方法将$v_\pi(s)$评估为首访$s$回报的均值，而每访(EV)MC平均所有到$s$访问的均值。两者十分相似但理论特性略有不同。下面是具体的FVMC算法：
 
-<img src="0501.png" />
+<img src="figures/0501.png" />
 
 当到$s$的访问/首访次数趋于无穷时，两种MC方法都收敛到$v_\pi(s)$。在FVMC中，每个回报都是$v_\pi(s)$方差有限的独立同分布估计，由大数定律，这些均值序列收敛到它们的期望；每个均值本身是无偏估计，其误差的标准差$\sim 1/\sqrt{n}$。EVMC也可以证明二次收敛到$v_\pi(s)$。下图是MC算法的备份图。
 
-<img src="0502.png" />
+<img src="figures/0502.png" />
 
 备份图的普遍思想是在顶部展示要更新的根节点，在下面展示所有激励和估计价值促成更新的转移和叶子。在MC中，根是状态节点，下面是节的整个转移轨迹，以终止状态结束。MC备份图与DP的区别在于：
 
@@ -62,7 +62,7 @@ $$
 - 其一是坚持在每个策略评估中近似$q_{\pi_k}$的原则，设定度量和假设来获得评估误差大小和概率的范围；然后在策略评估中采取充分的步骤来使这个范围足够小。这个方法能确保到某种程度近似的正确收敛，但可能要求太多的节；
 - 另一个是在回到策略改善钱放弃完整策略评估，每个评估步将价值函数向$q_{\pi_k}$移动，但无需通过很多步来靠近，这种思想的一个极端是价值迭代。在MC中则逐节交替评估和改善，每节之后观测到的回报被用于策略评估，然后策略在此节中所有被访问的的状态上改善。完整的MCES算法如下：
 
-<img src="0503.png" />
+<img src="figures/0503.png" />
 
 在MCES中，每个状态-行动对的所有回报都被累积并平均，而无论观测到它们时的有效策略。MCES不会收敛点到次优策略，如若不然价值函数会逐渐收敛到那个策略，这反过来会改变此策略，最终不可避免地收敛到不动点，即最优策略和价值函数。
 
@@ -76,7 +76,7 @@ On-policy控制方法中策略是广义松弛的，即表示$\forall s \in \math
 
 on-policy的MC控制整体依然是GPI的思想，先评估当前策略的行动价值函数，但没有探索启动的假设就不能简单地对当前价值函数贪心来改善策略，这样会妨碍对非贪心行动的更深探索。幸运的是GPI并不要求一直采取贪心策略，只需向一个贪心策略移动即可。我们的on-policy方法仅会移向一个$\varepsilon$-贪心策略，最终获得的策略也是近似最优。由策略改善定理，任意关于$q_\pi$为$\varepsilon$-贪心的策略都是$\varepsilon$-松弛策略$\pi$的改善，即任何对$q_\pi$为$\varepsilon$-贪心的策略都优于或等优于任意$\varepsilon$-松弛策略。
 
-<img src="0504.png" />
+<img src="figures/0504.png" />
 
 通过$\varepsilon$-松弛的贪心策略，我们能够保证每一步的改善，除非已在所有$\varepsilon$-松弛策略中找到最优的。虽然仅是$\varepsilon$-松弛中的最优，但另一方面清除了探索启动的假设。
 
@@ -277,3 +277,65 @@ def offMCC(SA, gamma=.1):
 ```
 
 上面的控制算法中使用了$\frac1{b(A_t\mid S_t)}$而非$\frac{\pi(A_t\mid S_t)}{b(A_t\mid S_t)}$是因为策略$\pi$是贪心策略，以1的概率选择当前价值最大的行动。
+
+
+
+Montecarlo.py
+
+```python
+import random.random as random
+import random.sample as sample
+from numpy import argmax
+
+
+# first-visit MC prediction estimating state values of a policy
+def fvmc(policy, states):
+    # 1.initialization
+    values = {state:random() for state in states}
+    returns = {state:[] for state in states}
+
+    # Loop each episode
+    while True:
+        states, actions, rewards = generate_episode(policy)
+        G = 0
+        T = len(episode) / 3
+        for t  in reverse(range(0,T)):
+            G = G + rewards[t]
+            if states[t] in states[:t]:
+                returns[states[t]].append(G)
+                values[states[t]] = sum(returns[states[t]]) / len(returns[states[t]])
+    return values
+
+
+# on-policy first-visit MC control(for epsilon-soft policies)
+def onfvmc(actions, epsilon):
+    """
+    Input:
+        actions: the dict of states:available-actions
+        epsilon: the threshold of a 
+    Output:
+        return an approxmation of a epsilon-greedy policy
+    """
+    # Initialize
+    states = actions.keys()
+    values = {s:{a:random() for a in actions[s]} for s in states}
+    returns = {s:{a:[] for a in actions[s]} for s in states}
+    def epsilon_policy(state): # Arbitrary epsilon greedy policy
+        if random() <= epsilon:
+            return sample(actions[state])
+        else:
+            maxind = argmax(values[state])
+            return actions[state][maxind]
+
+    # Improvement
+    while True:
+        S, A, R = generate_episode()
+        G = 0
+        for t in reverse(range(len(S))):
+            G = G + R[t]
+            if (S[t],A[t]) in [(S[i]:A[i]) for i in range(t)]:
+                returns[S[t]][A[t]].append(G)
+                values[S[t]][A[t]] = sum(returns[S[t]][A[t]]) / len(returns[S[t]][A[t]])
+
+```
+

@@ -6,7 +6,7 @@
 
 MDP试图直接构造从互动中学习以实现某一目标的问题。学习者或决策者称为**代理(agent)**，与它互动的代理外一切事物为**环境(enviroment)**。它们在离散的时间步$t=0,1,2,\dots$上互动，在每一步$t$，代理处在环境的某个**状态(state)**$S_t \in \mathcal S$中，基于此选择一个**行动(action)**$A_t \in \mathcal A(s)$，一步之后，代理获得一个数值**激励(reward)**$R_{t+1} \in \mathcal R \in \mathbb R$，并进入新的状态$S_{t+1}$。如下图：
 
-<img src="0301.png" />
+<img src="figures/0301.png" />
 
 其中$\mathcal A(s)$表示在状态$s$代理可选的行动集；因此这就产生了这样一个**序列(sequence)**或**轨迹(trajectory)**：
 $$
@@ -55,7 +55,7 @@ v_\pi(s) &\dot=& \mathbb E_\pi[G_t\mid S_t=s] \tag{3.6}\\
 $$
 函数$v_\pi$是策略$\pi$的**状态价值函数**。(3.7)为$v_\pi$的**贝尔曼(Bellman)方程**（证明见附录），表达了状态与其后继状态之间的价值关系，这种关系也可以由下图来表现：
 
-<img src="0302.png" />
+<img src="figures/0302.png" />
 
 上图称为$v_\pi$的**备份图**，因其勾勒形成更新基础的关系，或备份RL方法中的核心操作——**将价值信息从后继状态反向传播**。同样可定义状态-行动对的价值：
 $$
@@ -66,7 +66,7 @@ q_\pi(s,a) &\dot=& \mathbb E_\pi\left[ G_t\mid S_t=s, A_t=a \right] \tag{3.8}\\
 $$
 其中$q_\pi$是策略$\pi$的**行动价值函数**。(3.9)为$q_\pi$的**贝尔曼(Bellman)方程**，$q_\pi$的备份图为：
 
-<img src="0303.png" />
+<img src="figures/0303.png" />
 
 状态价值函数和行动价值函数的关系：
 $$
@@ -114,7 +114,7 @@ q_*(s,a)
 $$
 $v_*,q_*$的贝尔曼最有性方程的备份图如下，这里用最大取代了前面$v_\pi,q_\pi$备份图中的期望：
 
-<img src="0304.png" />
+<img src="figures/0304.png" />
 
 对有限MDP，$v_\pi$的贝尔曼最优性方程含有与策略无关的唯一解。贝尔曼方程实际是一个方程组，每个方程对应一个状态。若有$n$个状态，则有$n$个方程含$n$个未知数。若环境动态$p$已知，则原则上可以解出这个$v_*$的方程组。类似也可以$q_*$相关的方程组。
 
@@ -148,3 +148,56 @@ q_\pi(s,a) &=& \mathbb E_\pi\left[ G_t\mid S_t=s, A_t=a \right]\\
 &=& \sum_{s',r} p(s',r\mid s,a) \left[ r+\gamma\sum_{a'}\pi(a'\mid s') q_\pi(s',a') \right]\\
 \end{eqnarray}
 $$
+
+
+
+##### MDP
+
+二、关于最优策略的理解：
+
+1. 策略偏序关系定义为，当且仅当对所有的$s\in\mathcal S$都有$v_\pi(s)\ge v_{\pi'}(s)$时，则$\pi\ge\pi'$；
+
+2. 总存在一个或多个策略优于或等于其他所有策略，这就是最优策略，记为$\pi_*$；
+
+3. 所有最优策略都有同样的最优状态价值函数$v_*(s)\dot=\max_\pi v_\pi(s)$；
+
+4. 所有最优策略都有同样的最优行动价值函数，表示在状态$s$采取行动$a$后遵循最优策略所能得到的期望回报：
+   $$
+   \begin{eqnarray}
+   q_*(s,a) &\dot=& \max_\pi q_\pi(s,a)\\
+   &=& \max_\pi \mathbb E_\pi\bigl[ G_t \mid S_t=s, A_t=a \bigr]\\
+   &=& \max_\pi\mathbb E_\pi\bigl[ R_{t+1} + \gamma G_{t+1} \mid S_t=s, A_t=a \bigr]\\
+   &=& \max_\pi \mathbb E_\pi\bigl[ R_{t+1} + \gamma G_{t+1} \mid S_{t+1}, S_t=s,A_t=a \bigr]\tag{1.7}\\
+   &=& \mathbb E\bigl[ R_{t+1}+\gamma v_*(S_{t+1}) \mid S_t=s,A_t=a \bigr] \tag{1.8}
+   \end{eqnarray}
+   $$
+   (1.7)是因为条件为$S_t=s,A_t=a$时就可以引出后继状态$S_{t+1}$；还有这里形式是$\mathbb[G_{t+1}\mid S_t=s,A_t=a]$，回报与状态行动不在同一时间步，因此不是$q(s,a)$。注意这里是采取行动$a$后再遵循最优策略，在状态$s$采取行动$a$很可能并不属于最优策略。
+
+
+
+三、状态价值函数的贝尔曼最优性方程：
+$$
+\begin{eqnarray}
+v_*(s) &=& \max_{a\in\mathcal A(s)}q_{\pi_*}(s,a)\tag{1.9}\\
+&=& \max_{a} \mathbb E\bigl[R_{t+1} +\gamma v_*(S_{t+1}) \mid S_t=s, A_t=a\bigr]\tag{1.10}\\
+&=& \max_a \sum_{s',r} p(s',r \mid s,a)\left[ r+\gamma v_*(s') \right]\tag{1.11}
+\end{eqnarray}
+$$
+行动价值函数的贝尔曼最优性方程为：
+$$
+\begin{eqnarray}
+q_*(s,a) &=& \mathbb E\bigl[ R_{t+1}+\gamma v_*(S_{t+1}) \mid S_t=s,A_t=a \bigr] \tag{1.12}\\
+&=& \mathbb E\left[ R_{t+1}+\gamma \max_{a'}q_*(S_{t+1},a') \middle | S_t=s,A_t=a \right]\tag{1.13}\\
+&=& \sum_{s',r} p(s',r \mid s,a) \left[ r+\gamma\max_{a'}q_*(s',a') \right]\tag{1.14}
+\end{eqnarray}
+$$
+(1.10)和(1.12)可由(1.8)获得。最优状态价值函数、最优行动价值函数和最优策略之间的关系为：
+$$
+\begin{eqnarray}
+v_*(s) &=& \max_a q_*(s,a)\tag{1.15}\\
+q_*(s,a) &=& \sum_{s',r} p(s',r \mid s,a) \left[ r+\gamma v_*(s') \right]\tag{1.16}\\
+\pi_*(s) &=& \arg\max_a q_*(s,a)\tag{1.17}\\
+\pi_*(s) &=& \arg\max_a \sum_{s',r} p(s',r \mid s,a) [r+\gamma v_*(s')]\tag{1.18}
+\end{eqnarray}
+$$
+(1.15)可由(1.9)获得，(1.16)可由(1.11)获得。策略就是将状态映射为动作的函数，因此获得最后两个公式。由(1.17)，在获得所有$q_*$后，取每个状态$s$所有行动$a$中$q_*(s,a)$最大者即可确定策略；由(1.18)，在获得所有$v_*$后，通过向前一步搜索（不需要知道$q_*$），也可确定策略。

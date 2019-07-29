@@ -47,7 +47,7 @@ $$
 
 这样完成一次所有状态的更新就是状态空间的一次扫描，在DP中通常使用就地方法，在扫描中状态更新价值的顺序对收敛速度影响很大。完整的算法如下：
 
-<img src="0401.png" />
+<img src="figures/0401.png" />
 
 
 
@@ -96,7 +96,7 @@ $$
 
 现在对一个策略$\pi$就可以按照1)用策略评估计算$v_\pi$，2)用策略改善产生更优策略来不断迭代直至获得最优策略。因有限MDP仅有有限个策略，这个过程必然能在有限次迭代后手链到最优策略。这就是策略迭代，完整算法如下，注意每次策略评估开始用的是前一个策略的价值函数，这通常能大大提高收敛速度：
 
-<img src="0402.png" />
+<img src="figures/0402.png" />
 
 
 
@@ -112,7 +112,7 @@ v_{k+1}(s)
 $$
 对任意$v_0$序列$v_k$都在确保$v_*$存在相同的条件下收敛到$v_*$。完整的算法如下：
 
-<img src="0403.png" />
+<img src="figures/0403.png" />
 
 价值迭代在每次扫描中有效结合了一侧策略评估扫描和一次策略改善扫描。在策略改善扫描之间插入多个策略评估扫描会加快收敛。通常整个截断策略改善算法类可视为扫描序列，其中一些使用策略评估更新而有些使用策略改善更新。(4.10)中的最大化操作是这些更新的唯一区别，仅意味着最大化操作添加到了一些策略评估的扫描中。对折扣有限MDP所有这些算法都收敛到最优策略。
 
@@ -132,7 +132,7 @@ DP的一个主要缺陷是要求在状态集上的扫描，当状态集很大时
 
 策略迭代由两个同时、交互的进程组成，策略评估使价值函数与当前策略保持一致，策略改善则使策略对当前价值函数贪婪。但两者不必一个开始前另一个结束结束这样交替进行，价值迭代在策略改善间仅进行一次策略评估迭代，异步DP中评估和迭代粒度更加纤细。只要两个进程都持续更新所有状态，最终结果都会收敛到最优价值和最优策略。
 
-<img src="0404.png" />
+<img src="figures/0404.png" />
 
 我们用GPI来表示与粒度和其他细节无关的策略评估与策略改善的的交互。几乎所有RL方法都能用GPI描述，即：
 
@@ -143,7 +143,7 @@ DP的一个主要缺陷是要求在状态集上的扫描，当状态集很大时
 
 评估和改善既竞争又合作：改善使策略对价值函数贪婪通常使价值函数与变化的策略不一致，而评估使价值函数与当前策略一致又会使策略不再贪婪；但长期来看两者最终交互到一个结合点——最优策略和最优价值函数。以限制或目标的角度来看待这种交互，如下图二维空间中表示目标解决方法的两条**非平行或正交**的直线，每个进程驱使价值函数或策略移向一条线。直接向某个目标（垂直于目标直线）靠近会偏移另一个目标，最终不可避免地向趋向整体的最优性。图中箭头表示是系统完全实现某个目标行为，在GPI中可采取更小、不完整的步骤。尽管都不尝试直接实现，但最终两个进程共同达到整体最优性目标。
 
-<img src="0405.png" />
+<img src="figures/0405.png" />
 
 
 
@@ -175,3 +175,154 @@ DP可能在非常大型问题中并不实用，但与其他方法相比在解决
 2.策略改善定理的证明：
 
 3.行动价值函数的策略迭代为：
+
+
+
+##### DP
+
+一、任意策略$\pi$的状态价值函数$v_\pi$计算公式为：
+$$
+\begin{eqnarray}
+v_\pi(s) &=& \mathbb E_\pi[R_{t+1} + \gamma G_{t+1} \mid S_t=s]\\
+&=& \mathbb E_\pi[R_{t+1} + \gamma v_\pi(S_{t+1}) \mid S_t=s] \tag{2.1}\\
+&=& \sum_a \pi(a \mid s) \sum_{s',r} p(s',r \mid s,a) \bigl[ r+\gamma v_\pi(s') \bigr] \tag{2.2}
+\end{eqnarray}
+$$
+将最后两个改成迭代式为
+$$
+\begin{eqnarray}
+v_{k+1}(s) &\dot=& \mathbb E_\pi\bigl[R_{t+1} + \gamma v_k(S_{t+1}) \mid S_t=s\bigr]\\
+&=& \sum_a\pi(a\mid s)\sum_{s',r} p(s',r \mid s,a) \bigl[ r+\gamma v_k(s') \bigr] \tag{2.3}
+\end{eqnarray}
+$$
+对应计算$q_\pi$的公式为：
+$$
+\begin{eqnarray}
+q_\pi(s,a) &=& \mathbb E_\pi [R_{t+1} + \gamma G_{t+1} \mid S_t=s, A_t=a]\\
+&=& \mathbb E_\pi \bigl[R_{t+1} + \gamma \mathbb E_\pi[v_\pi(S_{t+1})] \mid S_t=s, A_t=a\bigr]\\
+&=& \mathbb E_\pi \left[ R_{t+1} + \gamma \sum_{A_{t+1}}\pi(A_{t+1}\mid S_{t+1})q_\pi(S_{t+1},A_{t+1}) \middle | S_t=s, A_t=a \right] \tag{2.4}\\
+&=& \sum_{s',r} p(s',r \mid s,a) \left[ r+\gamma\sum_{a'}\pi(s'\mid a')q_\pi(s',a') \right] \tag{2.5}
+\end{eqnarray}
+$$
+最后的迭代公式为：
+$$
+\begin{eqnarray}
+q_{k+1}(s,a) &=& \mathbb E_\pi \left[ R_{t+1} + \gamma \sum_{A_{t+1}}\pi(A_{t+1}\mid S_{t+1})q_k(S_{t+1},A_{t+1}) \middle | S_t=s, A_t=a \right]\\
+&=& \sum_{s',r} p(s',r \mid s,a) \left[ r+\gamma\sum_{a'}\pi(s'\mid a')q_k(s',a') \right] \tag{2.6}
+\end{eqnarray}
+$$
+二、策略改善定理的理解
+
+若已确定了某一策略$\pi$的状态-价值函数$v_\pi$，希望了解在某个状态$s$选择行为$a\neq\pi(s)$会得到与原来相比怎样的结果，则可以由(1.6)，即：
+$$
+\begin{eqnarray}
+q_\pi(s,a) &\dot=& \mathbb E_\pi[R_{t+1} + \gamma v_\pi(S_{t+1}) \mid S_t=s,A_t=a] \tag{2.7}\\
+&=& \sum_{s',r} p(s',r \mid s,a) \bigl[ r+\gamma v_\pi(s') \bigr]
+\end{eqnarray}
+$$
+计算在$s$选择$a$然后遵循策略$\pi$所获得的价值$q_\pi(s,a)$，再与$v_\pi(s)$比较，若$q_\pi(s,a)>v_\pi(s)$，则在$s$选择$a$，其余状态不变所形成的新策略$\pi'$必然是比$\pi$更好的策略。
+
+(2.7)的理解可参照(1.8)。因$v_{\pi'}(s)>v_\pi(s)$，而所有其他状态价值的计算都会直接或间接地涉及到它，作为和的一部分，因此必大于等于原来的状态价值，因此在所有的状态上$\pi'$的价值都大于$\pi$，因此是更好的策略。另外，一旦确定好策略$\pi$后，就有$\forall s\in \mathcal S, v_\pi(s)=q_\pi(s,\pi(s))$。
+
+策略改善定理：若$\pi$和$\pi'$为两个确定性策略并对$\forall s \in \mathcal S$满足：
+$$
+q_\pi(s, \pi'(s)) \ge v_\pi(s) \tag{2.8}
+$$
+则策略$\pi'$必然是比$\pi$更好，即对$\forall s \in \mathcal S$，都有：
+$$
+v_{\pi'}(s) \ge v_\pi(s) \tag{2.9}
+$$
+并且若有任一状态在(2.8)严格不等，则在(2.9)中至少存在一个严格不等式，因此很自然就想到下面的贪心策略：
+$$
+\begin{eqnarray}
+\pi_*(s) &=& \arg\max_a q_\pi(s,a) \tag{2.10}\\
+&=& \arg\max_a \mathbb E[R_{t+1} + \gamma v_\pi(S_{t+1}) \mid S_t=s,A_t=a] \tag{2.11}\\
+&=& \arg\max_a \sum_{s',r} p(s',r \mid s,a) [r+\gamma v_\pi(s')] \tag{2.12}
+\end{eqnarray}
+$$
+这样通过**对原策略价值函数贪心**的改善原策略的过程，就是策略改善。若新策略$\pi'$等优但不优于$\pi$，则$v_{\pi'}=v_\pi$，并由(1.17)，对$\forall s \in \mathcal S$有：
+$$
+v_{\pi'}(s) = \max_a \sum_{s',r} p(s',r \mid s,a)\left[ r+\gamma v_*(s') \right]
+$$
+这等价于贝尔曼最优性方程(1.11)，因此必有$v_{\pi'} = v_\pi$，因此$\pi=\pi'=\pi_*$。因此**策略改善必给出一个严格更优的策略，除非原策略已是最优**。
+
+三、基于(2.6)和(2.10)实现策略迭代的行动价值函数版，包括改善多个最优策略死循环问题：
+$$
+\bbox[5px,border:2px solid]
+{\begin{aligned}
+ &\underline{\text{Policy Iteration with }q_\pi}\\
+ \\
+&1.\text{ Initialization}\\
+&\quad V(s,a) \in \mathbb R \text{ arbitrarily}, \forall s\in\mathcal S \text{ and }a\in\mathcal A(s)\\
+&\quad \pi(s) \in \mathcal A(s) \text{ arbitrarily}, \forall s\in\mathcal S\\
+\\
+&2.\text{ Policy Evaluation}\\
+&\quad\text{Loop:}\\
+&\quad\qquad \Delta \leftarrow 0\\
+&\quad\qquad \text{Loop for each }s \in \mathcal S:\\
+&\quad\qquad\qquad \text{Loop for each }a \in \mathcal A(s):\\
+&\quad\qquad\qquad\qquad v \leftarrow V(s,a)\\
+&\quad\qquad\qquad\qquad V(s,a) \leftarrow \sum_{s',r} p(s',r \mid s,a) \left[ r+\gamma\sum_{a'}\pi(s'\mid a')V(s',a') \right]\\
+&\quad\qquad\qquad\qquad \Delta = \max\bigl(\Delta, \vert v-V(s,a) \vert\bigr)\\
+&\quad\text{until }\Delta < \theta\\
+\\
+&3.\text{ Policy Improvement}\\
+&\quad policy\text-stable \leftarrow true\\
+&\quad \text{Loop for each } s \in \mathcal S:\\
+&\quad\qquad old\text-value \leftarrow V\bigl(s,\pi(s)\bigr)\\
+&\quad\qquad \pi(s) \leftarrow \arg\max_a V(s,a)\\
+&\quad\qquad \text{If }old\text-value \neq V\bigl(s,\pi(s)\bigr), \text{ then }policy\text-stable\leftarrow false\\
+&\quad \text{If }policy\text-stable, \text{then stop and return }V \approx v_*; \text{ else go to }2
+\end{aligned}}
+$$
+改善的基本思想是用价值函数代替行动来判别策略是否稳定，因所有最优策略的价值函数都相同。
+
+四、确定性策略，随机性策略，$\varepsilon$-松弛策略
+
+$\varepsilon$-松弛策略要求，在每个状态$s$至少以$\frac\varepsilon{\vert\mathcal A(s)\vert}$的概率选择$\mathcal A(s)$中的每个行动；
+
+确定性策略就是在每个状态都会给出固定的行动的策略；
+
+随机性策略就是在每个状态从所有行动的分布中抽样的行动；
+
+预测问题就是评估一个策略的价值函数；
+
+控制问题就是改善任务的策略直到最优。
+
+五、行动的价值迭代
+$$
+\begin{eqnarray}
+q_{k+1}(s,a) &=& \mathbb E\left[ R_{t+1}+\gamma \max_{A_{k+1}}q_k(S_{t+1},A_{k+1}) \middle | S_t=s,A_t=a \right]\\
+&=& \sum_{s',r} p(s',r \mid s,a) \left[ r+\gamma\max_{a'}q_k(s',a') \right] \tag{2.13}
+\end{eqnarray}
+$$
+依据(2.13)可获得算法为：
+$$
+\bbox[5px,border:2px solid]
+{\begin{aligned}
+ &\underline{\text{Value Iteration with }q_\pi}\\
+ \\
+&\text{Initialize }V(s,a), \text{ for } \forall s\in\mathcal S\text{ and }a\in\mathcal A(s), \text{ arbitrarily}\\
+\\
+&\text{Loop:}\\
+&\qquad\Delta \leftarrow 0\\
+&\qquad\text{Loop for each }s \in \mathcal S:\\
+&\qquad\qquad v \leftarrow V(s,a)\\
+&\qquad\qquad V(s,a) \leftarrow \sum_{s',r} p(s',r \mid s,a) \left[ r+\gamma\max_{a'}V(s',a') \right]\\
+&\qquad\qquad\Delta \leftarrow \max(\Delta,\vert v-V(s,a)\vert)\\
+&\text{until }\Delta < \theta\\
+\\
+&\text{Output a deterministic policy},\pi\approx\pi_*, \text{such that}\\
+&\qquad\pi(s) \leftarrow \arg\max_aV(s,a)
+\end{aligned}}
+$$
+六：证明$v_\pi(s) = \mathbb E_\pi[R_{t+1} + \gamma v_\pi(S_{t+1}) \mid S_t=s]$
+$$
+\begin{eqnarray}
+v_\pi(s)
+&=& \mathbb E_\pi[R_{t+1}+\gamma G_{t+1} \mid S_t=s]\\
+&=& \sum \pi(S_{t+1} \mid S_t=s)\mathbb E[R_{t+1} + \gamma G_{t+1} \mid S_{t+1}]\\
+&=& \sum \pi(S_{t+1} \mid S_t=s)[\mathbb E(R_{t+1}) + \gamma v_\pi(S_{t+1})]\\
+&=& \mathbb E_\pi[R_{t+1}+\gamma v_\pi(S_{t+1}) \mid S_t=s]
+\end{eqnarray}
+$$
