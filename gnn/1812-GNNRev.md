@@ -40,10 +40,25 @@ GNN的首个推动源于卷积神经网络，CNN能构提取多尺度局部空�
 |                        $\sigma$                         |              sigmoid函数              |
 |                         $\rho$                          |           可供选非线形函数            |
 |                         $\tanh$                         |             双曲正切函数              |
-|                   $\text{LeakyReLU}$                    |                                       |
+|                   $\text{LeakyReLU}$                    |             LeakyReLU函数             |
 |                                                         |            逐元素相乘操作             |
 |                         $\Vert$                         |               向量拼接                |
 
 ##### 图神经网络
 
-图神经网络首先在[文献1]()中被提出，它扩展已有的神经网络来处理以图领域表达的数据。在一个图中，每个节点都很自然地用其特征和相关节点来表达，
+图神经网络首先在[文献1]()中被提出，它扩展已有的神经网络来处理以图领域表达的数据。在一个图中，每个节点都很自然地用其特征和相关节点来表达。GNN的目标是学习一个包含每个节点近邻信息的状态嵌入$\mathbf h_v \in \mathbb R^s$，$\mathbf h_v$是节点$v$的一个$s$维向量，能用于产生作为标签的输出$\mathbf o_v$。称参数化函数$f$为**局部转移函数**，它被所有节点共享并按照近邻的输入更新节点状态；令$g$为**局部输出函数**，它描述产生输出的方式。这样，$\mathbf h_v$和$\mathbf o_v$就定义为：
+$$
+\begin{eqnarray}
+\mathbf h_v &=& f\left( \mathbf x_v, \mathbf x_{co[v]}, \mathbf h_{ne[v]}, \mathbf x_{ne[v]} \right)\tag{1}\\
+\mathbf o_v &=& g\left( \mathbf h_v, \mathbf x_v \right) \tag{2}
+\end{eqnarray}
+$$
+其中$\mathbf x_v$是$v$的特征，$\mathbf x_{co[v]}$是其边的特征，$\mathbf h_{ne[v]}$、$\mathbf x_{ne[v]}$是节点近邻的状态和特征。令$\mathbf H$、$\mathbf O$、$\mathbf X$和$\mathbf X_N$分别为堆叠所有状态、输出、特征和节点特征所构造的向量，则就有一个紧致的形式：
+$$
+\begin{eqnarray}
+\mathbf H &=& F(\mathbf H, \mathbf X) \tag{3}\\
+\mathbf O &=& G(\mathbf H, \mathbf X_N) \tag{4}
+\end{eqnarray}
+$$
+其中**全局转移函数**$F$，**全局输出函数**$G$分别是所有节点的$f$和$g$的堆叠版。
+
