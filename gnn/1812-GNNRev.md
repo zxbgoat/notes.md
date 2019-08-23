@@ -116,3 +116,22 @@ $$
 
 ##### 2.2.2 传播类型
 
+模型中的传播和输出步骤对获得节点（或）边的隐状态至关重要，如下表所示，在传播步骤有一些主要修改，但在输出步骤研究者通常遵循简单的前向神经网络设定。GNN不同变体的比较如下表所示，它们使用不同的聚合器（aggregators）来收集每个节点近邻的信息，使用特定的更新器来更新节点隐状态。
+
+###### 2.2.2.1 卷积
+
+扩展卷积到图领域正日益引起研究者的兴趣，这个方向的进展通常分为谱方法和非谱（空间）方法。谱方法使用一个图的谱表达发挥作用。
+
+**谱网络**：[文献45](https://arxiv.org/pdf/1312.6203.pdf)提出的谱网络，卷积操作通过计算图Laplacian的特征分解在Fourier域定义卷积操作。这个操作可以定义为一个信号$\mathbf x \in \mathbb R^N$（每个节点一个标量）与一个由$\theta\in\mathbb R^N$参数化核的乘积：
+$$
+\mathbf g_\theta \star \mathbf x = \mathbf U\mathbf g_\theta(\mathbf \Lambda)\mathbf U^T\mathbf x \tag{10}
+$$
+其中$\mathbf U$是正规化图Laplacian特征向量矩阵$\mathbf L=\mathbf I_N - \mathbf D^{-\frac12}\mathbf A\mathbf D^{-\frac12}=\mathbf U\mathbf \Lambda\mathbf U^T$（$\mathbf D$是度矩阵，$\mathbf A$是图的邻接矩阵），$\mathbf \Lambda$为其特征值的对角矩阵。这个操作可能会导致密集的计算和无空间定位的核。[文献46](https://arxiv.org/pdf/1506.05163.pdf)通过引入平滑系数的参数化来尝试使得谱核在空间定位。
+
+**ChebNet**：[文献47](https://arxiv.org/pdf/0912.3848.pdf)则建议可以通过关于Chebyshev多项式$\mathbf T_k(x)$到第$K$阶的截断扩展来估计$\mathbf g_\theta(\mathbf \Lambda)$。这样操作就变成：
+$$
+\mathbf g_\theta \star \mathbf x \approx \sum_{k=0}^K \theta_k\mathbf T_k\left( \tilde{\mathbf L} \right) \mathbf x \tag{11}
+$$
+其中$\tilde{\mathbf L}=\frac2{\lambda_{max}}\mathbf L - \mathbf I_N$。$\lambda_{max}$表示$\mathbf L$的最大特征值，$\theta \in \mathbb R^K$现在则是Chebyshev系数向量。Chebyshev多项式定义为$\mathbf T_k(\mathbf x)=2\mathbf x\mathbf T_{k-1}(\mathbf x) - \mathbf T_{k-2}(\mathbf x)$，其中$\mathbf T_0(\mathbf x)=1, \mathbf T_1(\mathbf x)=\mathbf x$。可见这个操作是$K$-局部(localized)的，因为在Laplacian中是$K$阶多项式。[文献48](https://arxiv.org/pdf/1606.09375.pdf)提出ChebNet，它使用$K$-局部(localized)卷积来定义能够免于计算Laplacian特征向量的卷积神经网络。
+
+**GCN**：[文献2](https://arxiv.org/pdf/1609.02907.pdf)限制逐层卷积操作到$K=1$来缓和在
