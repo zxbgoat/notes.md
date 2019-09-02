@@ -1,0 +1,1 @@
+对抗生成网络（Generative Adversarial Networks）是一种优秀的生成模型，相比于其他生成模型有不依赖于先验假设
