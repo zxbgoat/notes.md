@@ -8,7 +8,7 @@ MemTracker整个框架如下图所示，它：
 4. 将最终模板与搜索图像特征卷积活得一个反应图，并预测目标边界框；
 5. 使用预测的边界框提取出新目标模板，提取出其特征，然后写入存储以更新模型。
 
-<img src='memtracker-framework.png' />
+<img src='figures/memtracker-framework.png' />
 
 ##### 特征提取
 
@@ -36,11 +36,11 @@ MemTracker整个框架如下图所示，它：
 - 给定视频和第$t$帧不同目标的检测结果，将每个目标建模为一个代理，并用历史轨迹和第$t+1$帧的外观信息预测目标的位置；
 - 挖掘每个代理与相邻代理以及环境之间的互动，通过一个决策网络并为每个代理做决策以更新、追踪或删除目标物体，前者能通过最大共享功用来减轻物体间的遮挡和有噪检测结果的影响。
 
-<img src="cdrl-keyidea.png" />
+<img src="figures/cdrl-keyidea.png" />
 
 这个方法由两部分组成：一个预测网络和一个决策网络，下图展示了其基本框架：
 
-<img src="cdrl-framework.png" />
+<img src="figures/cdrl-framework.png" />
 
 ##### 学习预测网络
 
@@ -52,7 +52,7 @@ $$
 $$
 g(b_i, b_j) = \frac{b_i \cap b_j}{b_i \cup b_j}
 $$
-<img src="cdrl-prediction.png" />
+<img src="figures/cdrl-prediction.png" />
 
 ##### 协作DRL
 
@@ -136,4 +136,4 @@ $$
 $$
 下面的算法总结了决策网络的详细的学习过程：
 
-<img src="Algo1.png" />
+<img src="figures/Algo1.png" />
