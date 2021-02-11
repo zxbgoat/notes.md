@@ -1,5 +1,7 @@
 用户可以使用`IPluginV2Ext`类来实现定制层，定制层通常被称为接口（plugin），由应用创建并实例化。TensorRT层，除`TopK`外，都希望以0工作空间大小发挥作用，但若没有0大小工作空间的实现精度要求会被忽略，在后面的例子中，网络层会以FP32运行，即便设置了其他的精度。
 
+
+
 #### 1 使用C++ API增加自定义层
 
 自定义层是通过扩展`IPluginCreator`类以及一个TensorRT接口基础类来实现的，`IPluginCreator`是自定义层的创建器类，通过它用户能够获得接口名称、版本和接口域参数，也提供了在构建阶段和推理时反序列化时创建接口对象的方法。用户必须从某个接口基类衍生得到，对应于不同类型/格式输入输出或动态形状网络的支持，这些基类拥有丰富的表达能力。下表归纳了基类，按照表达能力升序排列：
@@ -50,4 +52,51 @@ pluginObj->destroy();  // 销毁接口对象
 在序列化期间，TensorRT引擎会为所有的`IPluginV2`类型接口在内部保存接口类型、版本、命名空间（如果存在）；在反序列化期间，TensorRT引擎会查询这个信息来从接口注册处找到接口创建器。这就使得TensorRT引擎能在内部调用`IPluginCreator::deserializePlugin()`方法。在反序列化期间创建的接口对象会被TensorRT引擎在内部通过调用`IPluginV2::destroy()`方法来销毁。
 
 在前面的版本中，用户需要实现`nvinfer1::IPluginFactory`类来在反序列化期间调用`createPlugin`方法，这在使用TensorRT注册、使用`addPluginV2`添加的接口中不再需要。
+
+
+
+##### 1.1 示例：使用C++添加自定义层
+
+要使用C++添加一个自定义层，将其继承上面所述的基类中的一个，这里不需要动态输入，因此使用`IPluginV2IOExt`。对基于Caffe的网络，若使用TensorRT Caffe解析器，用户还需要继承来自`nvcaffeparser1::IPluginFactoryExt`（对`IPluginExt`类型的接口）和`nvinfer1::IPluginFactory`的类。下面的代码添加了一个名为`FooPlugin`的接口：
+
+```cpp
+class FooPlugin: public IPluginV2IOExt
+{
+  ... override all pure virtual methods of IPluginV@IOExt;
+  ... Do not override the TRT_DEPRECATED methods.
+};
+
+class MyPluginFactory: public nvinfer1::IPluginFactory
+{
+  ... implement all factory methods;
+};
+```
+
+若使用的是通过TensorRT接口注册处注册的`IPluginV2`类型接口，则无需实现`nvinfer1::IPluginFactory`类。
+
+
+
+##### 1.2 示例：使用C++添加一个Caffe不支持的定制层
+
+
+
+##### 1.3 示例：使用C++添加一个UFF中不支持的定制层
+
+
+
+##### 1.4 示例：使用C++添加一个支持动态形状的定制层
+
+要支持动态形状，接口必须继承`IPluginV2DynamicExt`，而工厂/创建器和注册处部分则与第一个示例相同。
+
+
+
+##### 1.5 示例：使用C++添加一个支持INT8 I/O的定制层
+
+
+
+##### 1.6 使用C++ API实现一个GELU运算符
+
+
+
+#### 2 使用Python API添加定制层
 
