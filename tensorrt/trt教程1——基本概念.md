@@ -45,7 +45,7 @@ class Logger: public ILogger
 
 ##### 2.1.2 通过硬盘上序列化的引擎
 
-若序列化的引擎已经被保存到文件中，则可以跳过上面的大多数步骤。可以使用TensorRT API的独立函数`createInferRuntime(gLogger)`来创建`IRuntime`类的对象，并调用`IRuntime::deserializeCudaEngine()`方法来创建引擎。
+若序列化的引擎已经被保存到文件中，则可以跳过上面的大多数步骤，使用函数`createInferRuntime(gLogger)`来创建`IRuntime`类的对象，并调用`IRuntime::deserializeCudaEngine()`方法来创建引擎。
 
 无论是直接从网络构建，还是从文件反序列化引擎，剩余的推理过程都是一致的。构造器（builder）和运行时（runtime）会随着与创建线程关联的GPU上下文被创建，尽管上下文不存在时会有一个默认的被创建，但依然建议介在创建一个运行时或构造器对象前创建并配置CUDA上下文。
 
