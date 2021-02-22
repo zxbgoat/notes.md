@@ -11,14 +11,6 @@ sudo apt-get update
 sudo apt-get install tensorrt
 ```
 
-若使用python3，运行
-
-```bash
-sudo apt-get install python3-libnvinfer-dev
-```
-
-会安装`python3-libnvinfer`。
-
 
 
 #### 1.2 实例化
@@ -28,7 +20,7 @@ TensorRT使用`IExecutionContext`接口来进行推理，而创建`IExecutionCon
 - 一种是通过用户模型的网络定义；
 - 另一种是通过硬盘上存储的经过序列化的引擎。
 
-在创建TensorRT对象前，一般会先创建一个全局的`ILogger`类对象，它是多种TensorRT API方法的参数，如下例创建了一个logger：
+在创建TensorRT对象前，一般会先创建一个全局的`ILogger`类对象，它是多种方法的参数：
 
 ```cpp
 class Logger: public ILogger

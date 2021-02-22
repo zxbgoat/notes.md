@@ -78,9 +78,125 @@ TensorRT网络定义的一个重要方面是它包含模型参数的指针，这
    network->markOutput(*prob->getOutput(0));
    ```
 
-   
+
+##### 2.2.2 使用解析器导入模型
+
+构造器必须在网络之前创建，因为它的作用是网络工厂，不同的解析器标识网络输出的机制各不相同。当前TensorRT支持三种类型的解析，分别是Caffe模型、TensorFlow的UFF模型和ONNX模型。要导入模型，需要执行下面的几个步骤：
+
+1. 创建构造器：
+
+   ```cpp
+   // create the builder and the network
+   IBuilder* builder = createInferBuilder(gLogger);
+   ```
+
+2. 为特定的格式创建TensorRT网络和解析器：
+
+   - **onnx模型**
+
+     ```cpp
+     const auto explicitBatch = 1U << static_cast<uint32_t>(
+         NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+     INetworkDefinition* network = builder->createNetworkV2(explicitBatch);
+     auto parser = nvonnxparser::createParser(*network, gLogger);
+     ```
+
+   - **UFF模型**
+
+     ```cpp
+     // create the network
+     INetworkDefinition* network = builder->createNetworkV2(0U);
+     // create the uff parser
+     auto parser = createUffParser();
+     ```
+
+   - **Caffe模型**
+
+     ```cpp
+     INetworkDefinition* network = builder->createNetworkV2(0U);
+     // create the caffe parser
+     auto parser = createCaffeParser();
+     ```
+
+3. 使用解析器来解析导入的模型，并分配到网络。
 
 
 
 #### 2.2 创建引擎
+
+`IBuilderConfig`有许多特性，可以用它来设置网络需要运行的精度、在探明最快参数（比如每个核心应该计时的次数）后自动进行调整（迭代越多，运行时间越长，但对噪音也更鲁棒）。也可以使用构造器来查询来硬件本地支持的简化精度类型。其中比较重要的一个特性是最大工作空间大小：层算法通常需要临时工作空间，这个参数限制了网络每一层能使用的最大空间，若未提供足够的初始值，可能会导致TensorRT无法找到给定层的实现。
+
+##### 2.2.1 引擎的构建与销毁
+
+下一步是调用构造器来创建一个经过优化的运行时（runtime），构造器的一个功能就是搜索CUDA核心（kernel）目录来找到最快的实现，因此需要使用与引擎将要运行的相同GPU来构建。构建引擎的过程如下：
+
+1. 使用构造对象创建引擎
+
+   ```cpp
+   // build the engine using builder object
+   IBuilderConfig* config = builder->createBuilderConfig();
+   config->setMaxWorkspaceSize(1 << 20);
+   ICudaEngine* engine = builder->buildEngineWithConfig(*network, *config);
+   ```
+
+2. 销毁（dispense）网络、构造器和解析器：
+
+   ```cpp
+   // 2. dispense with the network, builder, parser if using one
+   parser->destroy();
+   network->destroy();
+   config->destroy();
+   builder->destroy();
+   ```
+
+##### 2.2.2 构造器层计时缓存
+
+构建引擎非常耗时，因为构造器需要对每个层的候选核心计时，为减少构造器时间，TensorRT会在构造器期间设置一个层计时缓存来保存层的描述信息。若其他层有相同的输入/输出张量和参数，则TensorRT构造器会直接使用缓存的结果。层计时缓存默认是打开的，可以通过设置构造器标记来关闭：
+
+```cpp
+config->setFlag(BuilderFlag::kDISABLE_TIMING_CACHE);
+```
+
+
+
+#### 2.3 执行推理
+
+在获得引擎后，可以通过下面的步骤来执行推理：
+
+1. 因为引擎持有网络的定义参数，因此需要创建一些空间来保存中间激活值，这些都掌握在一个执行上下文中：
+
+   ```cpp
+   // 1. create some space to store intermediate activation values
+   IExecutionContext *context = enqine->createExecutionContext();
+   ```
+
+   一个引擎可以有多个执行上下文，可以使一个参数集合能被多个重叠的推理任务使用。比如可以使用一个引擎在并行的CUDA流中处理图像，而每个流一个上下文，每个上下文都会被创建在与引擎相同的GPU上。
+
+2. 使用输入和输出blob名称来获得对应的输入和输出索引：
+
+   ```cpp
+   // 2. get the corresponding input and output index
+   int inputIndex = engine->getBindingIndex(INPUT_BLOB_NAME);
+   int outputIndex = engine->getBindingIndex(OUTPUT_BLOB_NAME);
+   ```
+
+3. 使用这些索引设置一个缓冲区数组指向GPU上的输入和输出缓冲区：
+
+   ```cpp
+   // 3. set up a buffer array pointing to the input and output buffer on the GPU
+   void* buffers[2];
+   buffers[inputIndex] = inputBuffer;
+   buffers[outputIndex] = outputBuffer;
+   ```
+
+4. TensorRT执行通常是异步的，因此将核心排队到一个CUDA流中：
+
+   ```cpp
+   // enqueue the kernels on a CUDA stream
+   context->enqueueV2(buffers, stream, nullptr);
+   ```
+
+   若数据尚未就位，通常会在核心前和后将异步的`memcpy()`函数排队来从GPU移动数据。`enqueueV2()`最后的参数是一个可选的CUDA事件，当输入缓冲区被消费后它会发送消息，内存就被安全地使用。
+
+   要确定核心（以及可能的`memcpy()`）何时结束，使用标准的CUDA同步机制，如时间、或在流上等待。对于隐batch网络，参考[enqueue()](https://docs.nvidia.com/deeplearning/tensorrt/api/c_api/classnvinfer1_1_1_i_execution_context.html#a84436f784eb3f0ea9089de2678d77954)获得更多信息；显batch网络则参考[enqueueV2()](https://docs.nvidia.com/deeplearning/sdk/tensorrt-api/c_api/classnvinfer1_1_1_i_execution_context.html#ac7a5737264c2b7860baef0096d961f5a)。
 
