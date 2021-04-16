@@ -344,3 +344,37 @@ auto &n = i, *p2 = &ci;  // 错误：i的类型是int而&ci的类型是const int
 
 ##### 5.3 decltype类型指示符
 
+若希望从表达式的类型推断出要定义变量的类型，但又不希望使用它的值初始化变量，可以使用类型说明符`decltype`，其作用是选择并返回操作数的数据类型，再次过程中，编译器分析表达式并得到它的类型，却不实际计算表达式的值。
+
+- 如果decltype使用的表达式是一个变量，则decltype返回该变量的类型（包括顶层const）：
+
+  ```cpp
+  const int ci = 0, &cj = ci;
+  decltype(ci) x = 0;  // 正确：x的类型是const int
+  decltype(cj) y = x;  // 正确：y的类型是const int&
+  decltype(cj) z;      // 错误：z是一个引用必须初始化
+  ```
+
+  注意，引用从来都作为其所指对象的同义词出现，只有用在decltype处是个例外。
+
+- 如果decltype使用的表达式不是一个变量，则decltype返回表达式结果对应的类型。有些表达式会向decltype返回一个引用类型，此时表达式的结果对象能作为一条赋值语句的左值；而如果表达式的内容是解引用操作，则decltype将得到引用类型：
+
+  ```cpp
+  int i = 42, *p = &i, &r = i;
+  decltype(r + 0) b;  // 正确：加法结果是int，因此b是int
+  decltype(*p) c;     // 错误：c是int&，必须初始化
+  ```
+
+- decltype的结果类型与表达式形式密切相关，如果它所用表达式的变量名加上了一层或多层括号，则编译器会将其当成一个表达式，变量是一种可以作为赋值语句左值的特殊表达式，这样decltype就会得到引用类型：
+
+  ```cpp
+  decltype((i)) d;  // 错误，d是int&，必须被初始化
+  decltype(i) e;    // 正确，e是int
+  ```
+
+  切记：`decltype((variable))`的结果永远是引用；而`decltype(variable)`只有当variable本身是引用时才是引用。
+
+
+
+#### 6 自定义数据结构
+
