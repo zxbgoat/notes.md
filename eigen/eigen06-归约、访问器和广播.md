@@ -140,3 +140,86 @@ int main()
 
 注意：逐列操作返回行向量，逐行操作返回列向量。
 
+##### 3.1 结合部分归约与其他操作
+
+也可以
+
+对部分归约的结果进行进一步处理：
+
+```cpp
+int main()
+{
+  MatrixXf mat(2,4);
+  mat << 1, 2, 6, 9,
+         3, 1, 7, 2;
+  
+  MatrixXf::Index   maxIndex;
+  float maxNorm = mat.colwise().sum().maxCoeff(&maxIndex);
+  std::cout << "Maximum sum at position " << maxIndex << std::endl;
+  std::cout << "The corresponding vector is: " << std::endl;
+  std::cout << mat.col( maxIndex ) << std::endl;
+  std::cout << "And its sum is is: " << maxNorm << std::endl;
+}
+```
+
+
+
+#### 4 广播
+
+广播的概念类似于部分归约，不同之处在于广播构建一个通过在某个方向复制将向量解释为矩阵的表达式：
+
+```cpp
+int main()
+{
+  Eigen::MatrixXf mat(2,4);
+  Eigen::VectorXf v(2);
+  mat << 1, 2, 6, 9,
+         3, 1, 7, 2;
+  v << 0,
+       1;
+  //add v to each column of m
+  mat.colwise() += v;
+  std::cout << "Broadcasting result: " << std::endl;
+  std::cout << mat << std::endl;
+}
+```
+
+运算符`-=`、`-`也可以逐行或逐列使用。而在数组中，还可以使用`*`、`*=`、`/`和`/=`来执行逐元素、逐行、逐列操作，而在矩阵中则不可以。若希望将第0列与`v(0)`相乘、将第1列与`v(1)`相乘，则可以使用`mat = mat * v.asDiagnol()`。需要指出的是被逐行或逐列相加的必须是向量，否则会产生编译错误。这也意味着在对`Matrix`进行计算时，广播操作仅能应用到向量类型。类似地，在`Array`类中，与`VectorXf`等价的是`ArrayXf`。注意永远不要在同一个表达式中混用数组和矩阵。
+
+```cpp
+int main()
+{
+  Eigen::MatrixXf mat(2,4);
+  Eigen::VectorXf v(4);
+  mat << 1, 2, 6, 9,
+         3, 1, 7, 2;
+  v << 0,1,2,3;
+  //add v to each row of m
+  mat.rowwise() += v.transpose();
+  std::cout << "Broadcasting result: " << std::endl;
+  std::cout << mat << std::endl;
+}
+```
+
+##### 4.1 结合广播与其他操作
+
+广播可以与其他操作、比如矩阵和数组、归约、部分规约等结合起来。下面的例子找到矩阵`m`内`v`最近邻：
+
+```cpp
+int main()
+{
+  Eigen::MatrixXf m(2,4);
+  Eigen::VectorXf v(2);
+  m << 1, 23, 6, 9,
+       3, 11, 7, 2;
+  v << 2,
+       3;
+  MatrixXf::Index index;
+  // find nearest neighbour
+  (m.colwise() - v).colwise().squaredNorm().minCoeff(&index);
+ 
+  cout << "Nearest neighbour is column " << index << ":" << endl;
+  cout << m.col(index) << endl;
+}
+```
+
