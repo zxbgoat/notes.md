@@ -33,7 +33,7 @@ SiamMOT构建于FaterRCNN之上，添加了一个基于区域的孪生追踪器�
 
 在SiamMOT中，给定时间$t$时刻的检测实例$i$，孪生追踪器在帧$\mathbf I^{t+\delta}$上，其在$\mathbf I^t$中位置周围的上下文窗口中，搜寻此实例：
 $$
-\left( v_i^{t+\delta}, \tilde R^{t+\delta}_i \right) = \mathcal T\left( \mathbf f_{R^i}^t, \mathbf f_{S_i}^{t+\delta};\Theta \right)
+\left( v_i^{t+\delta}, \tilde R^{t+\delta}_i \right) = \mathcal T\left( \mathbf f_{R^i}^t, \mathbf f_{S_i}^{t+\delta};\Theta \right) \tag1
 $$
 
 
@@ -43,3 +43,11 @@ $$
 - $\mathbf f_{R^i}^t$是从帧$\mathbf I^t$的$R^t_i$区域提取的特征图；
 - $\mathbf f_{S_i}^{t+\delta}$则是从帧$\mathbf I^{t+\delta}$的搜索区域$S_i^{t+\delta}$提取的特征图；
 - $v_i^{t+\delta}$是实例$i$在$S_i^t+\delta$中可见的置信度。
+
+多目标跟踪会多次执行公式1，每次处理一个检测实例$R_i^t\in \mathbf R^t$，而SiamMOT架构允许这些操作：
+
+- 并行运行；
+- 仅需计算一次骨干特征；
+
+因此在线追踪十分高效。
+
